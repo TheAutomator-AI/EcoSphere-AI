@@ -27,7 +27,7 @@ export default function DashboardApp(){
  const [rows,setRows]=useState<Audit[]>([]),[stats,setStats]=useState<Analytics|null>(null),[evidence,setEvidence]=useState<Evidence[]>([]),[busy,setBusy]=useState(false),[error,setError]=useState(''),[authNeeded,setAuthNeeded]=useState(false),[formOpen,setFormOpen]=useState(false),[editing,setEditing]=useState<Audit|null>(null),[notice,setNotice]=useState('');
  const reduced=useReducedMotion();
  useEffect(()=>{const query=new URLSearchParams(window.location.search).get('view');if(NAV.some(v=>v.key===query))setView(query as View)},[]);
- const navigate=(v:View)=>{setView(v);setMobileNav(false);window.history.replaceState(null,'',`/dashboard?view=${v}`)};
+ const navigate=(v:View)=>{setView(v);setMobileNav(false);window.history.replaceState(null,'',`${window.location.pathname}?view=${v}`)};
  const loadReal=useCallback(async()=>{setBusy(true);setError('');setAuthNeeded(false);try{
   const current=await api<Me>('/api/me');setMe(current);
   if(!current.campus){setWorkspace(null);setRows([]);setStats(null);setEvidence([]);return}
