@@ -1,0 +1,2 @@
+import { DeveloperCard, SiteFooter, SiteHeader } from '@/components/SiteChrome';
+export default function Developer(){return <><SiteHeader/><main className="internal-page"><div className="shell"><span className="eyebrow"><span className="eyebrow-dot"/> BEHIND THE PLATFORM</span><h1>Built with purpose.<br/><span className="text-gradient">Designed for impact.</span></h1><p className="internal-lead">Meet the creator bringing environmental intelligence, interactive technology, and applied AI together.</p><DeveloperCard/></div></main><SiteFooter/></>}

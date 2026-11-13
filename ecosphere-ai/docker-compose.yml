@@ -1,0 +1,54 @@
+# Container deployment deliberately REQUIRES Supabase Auth for real-data endpoints.
+# The entirely separate public demo mode works even when no Supabase project is configured.
+# Development bypass is disabled because forwarded container requests are not loopback clients.
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ecosphere
+      POSTGRES_USER: ecosphere
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the root .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ecosphere -d ecosphere']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg://ecosphere:${POSTGRES_PASSWORD}@postgres:5432/ecosphere
+      DEV_AUTH_MODE: 'false'
+      ALLOWED_ORIGINS: http://localhost:3000
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_JWT_AUDIENCE: ${SUPABASE_JWT_AUDIENCE:-authenticated}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
+      SUPABASE_STORAGE_BUCKET: ${SUPABASE_STORAGE_BUCKET:-ecosphere-evidence}
+      UPLOAD_DIR: /app/uploads
+    ports:
+      - '127.0.0.1:8000:8000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - uploads:/app/uploads
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: http://127.0.0.1:8000
+        NEXT_PUBLIC_DEV_AUTH_MODE: 'false'
+        NEXT_PUBLIC_SUPABASE_URL: ${SUPABASE_URL:-}
+        NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:-}
+        NEXT_PUBLIC_DEVELOPER_GITHUB: ${NEXT_PUBLIC_DEVELOPER_GITHUB:-}
+        NEXT_PUBLIC_DEVELOPER_LINKEDIN: ${NEXT_PUBLIC_DEVELOPER_LINKEDIN:-}
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:3000:3000'
+    depends_on: [backend]
+volumes:
+  postgres_data:
+  uploads:
