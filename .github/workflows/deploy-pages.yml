@@ -1,0 +1,71 @@
+name: Deploy EcoSphere AI to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ecosphere-ai/frontend/**'
+      - '.github/workflows/deploy-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install frontend dependencies
+        working-directory: ecosphere-ai/frontend
+        run: npm install --no-audit --no-fund
+
+      - name: Build statically exported Next.js site
+        working-directory: ecosphere-ai/frontend
+        env:
+          GITHUB_PAGES: 'true'
+          NEXT_PUBLIC_DEV_AUTH_MODE: 'false'
+          NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+          NEXT_PUBLIC_DEVELOPER_GITHUB: 'https://github.com/TheAutomator-AI'
+          NEXT_PUBLIC_DEVELOPER_LINKEDIN: ${{ vars.NEXT_PUBLIC_DEVELOPER_LINKEDIN }}
+        run: npm run build
+
+      - name: Validate generated site
+        run: |
+          test -f ecosphere-ai/frontend/out/index.html
+          test -f ecosphere-ai/frontend/out/dashboard/index.html
+          touch ecosphere-ai/frontend/out/.nojekyll
+
+      - name: Upload generated website
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: ecosphere-ai/frontend/out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
